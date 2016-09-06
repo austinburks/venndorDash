@@ -1,12 +1,17 @@
+import os
 from flask import Flask
-app = Flask(__name__)
 
+app = Flask(__name__)
+app.config.from_object(os.environ['APP_SETTINGS'])
 
 @app.route('/')
 def hello():
     i = 1
     i += 1
-    return "Hello!!!"
+    i += 5
+    x = (os.environ['APP_SETTINGS'])    
+
+    return "Hello!!! %s" %x
     
 @app.route('/pg2')
 def hello_again():
