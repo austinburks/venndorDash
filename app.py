@@ -223,16 +223,16 @@ def sales_data_stream():
                                        how='inner',
                                        left_on='itemID',
                                        right_on='_id')
-    
+
         matched_items = matched_items.loc[matched_items['bought_match']]
         matched_items['Profit'] = (matched_items['matchedPrice'] -
                                    matched_items['minPrice'])
         matched_items = matched_items.reset_index(drop=True)
-    
+
         output_file('templates/sales-data.html')
-    
+
         source = ColumnDataSource(matched_items)
-    
+
         columns = [
             TableColumn(field="timeMatched",
                         title="Date",
