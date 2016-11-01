@@ -2,18 +2,39 @@
 # Importing libraries
 
 import os
-from flask import Flask, render_template
+from flask import (Flask,
+                   render_template,
+                   stream_with_context,
+                   Response)
 import pandas as pd
 import requests
-from bokeh.charts import Bar, show, output_file, save
-from bokeh.layouts import layout
-from bokeh.models import ColumnDataSource, DataRange1d, Range1d, VBox, HBox, Select, HoverTool
+from bokeh.charts import (Bar,
+                          show,
+                          output_file,
+                          save)
+from bokeh.layouts import (layout,
+                           widgetbox)
+from bokeh.models import (ColumnDataSource,
+                          DataRange1d,
+                          Range1d,
+                          VBox,
+                          HBox,
+                          Select,
+                          HoverTool)
+from bokeh.models.widgets import (DataTable,
+                                  DateFormatter,
+                                  TableColumn)
 from bokeh.palettes import Blues5
 from bokeh.plotting import Figure
-
+from bokeh.resources import INLINE
+from bokeh.embed import components
+import time
 # Defining environment settings
-app = Flask(__name__)
-app.config.from_object(os.environ['APP_SETTINGS'])
+app = Flask(__name__,
+            static_url_path='/static/')
+#app._static_folder = 'static'
+
+#app.config.from_object(os.environ['APP_SETTINGS'])
 
 # %%
 # Defining the function that gets the API Key
@@ -29,7 +50,6 @@ def getKey():
             key = file.readlines()
 
     return key
-
 
 def getItems(suffix,
              apiKey,
@@ -92,21 +112,19 @@ def dashboard():
     # %% Creating df defining the ratio of right swipes to left swipes
     df_right_left = pd.DataFrame(items)
 
-    # Finding the ratio
-    df_right_left['RightOverLeft'] = df_right_left['nuSwipesRight'].div(
-                                        df_right_left['nuSwipesLeft'])
-
     # Grouping by, and performing different aggregations
     df_right_left = df_right_left[['category',
                                    'nuSwipesRight',
-                                   'nuSwipesLeft',
-                                   'RightOverLeft']].groupby(
+                                   'nuSwipesLeft']].groupby(
                                       'category', as_index=False
                                           ).agg(
                                                {'nuSwipesRight': 'sum',
-                                                'nuSwipesLeft': 'sum',
-                                                'RightOverLeft': 'mean'})
+                                                'nuSwipesLeft': 'sum'
+                                                })
 
+    # Finding the ratio
+    df_right_left['RightOverLeft'] = df_right_left['nuSwipesRight'].div(
+                                        df_right_left['nuSwipesLeft'])                                   
     # Creating the first bar chart
     p1 = Bar(data=df_right_left,
              label='category',
@@ -158,13 +176,85 @@ def dashboard():
             [p1, p2]
             
                 ], sizing_mode='stretch_both')
-    save(l)
+    
+    p1_script, p1_div = components(p1)
+    p2_script, p2_div = components(p2)
+
+    js_resources = INLINE.render_js()
+    css_resources = INLINE.render_css()
 
     return(
         render_template(
-                    'bar.html'
+                    'index.html',
+                    plot_p1_script=p1_script,
+                    plot_p1_div=p1_div,
+                    plot_p2_script=p2_script,
+                    plot_p2_div=p2_div,
+                    js_resources=js_resources,
+                    css_resources=css_resources
+
                         )
             )
+
+
+@app.route('/sales-data')
+def sales_data_stream():
+    def generate():
+        # Obtain both the matches and item JSONS
+        matches = getItems(suffix='matches', apiKey=apiKey)
+        items = getItems(suffix='items', apiKey=apiKey)
+    
+        # Convert both to dataframe
+        match_df = pd.DataFrame(matches)
+        item_df = pd.DataFrame(items)
+    
+        # Filter to only the relevant columns
+        item_df = item_df[['_id', 'bought', 'minPrice', 'timeMatched']]
+        item_df = item_df.rename(columns={'bought': 'bought_item'})
+        item_df['timeMatched'] = pd.to_datetime(item_df['timeMatched'],
+                                                yearfirst=True,
+                                                exact=False,
+                                                format='%y-%m-%d')
+        match_df = match_df[['itemID', 'bought', 'matchedPrice']]
+        match_df = match_df.rename(columns={'bought': 'bought_match'})
+    
+        # Merge DFs on item ids
+        matched_items = match_df.merge(item_df,
+                                       how='inner',
+                                       left_on='itemID',
+                                       right_on='_id')
+    
+        matched_items = matched_items.loc[matched_items['bought_match']]
+        matched_items['Profit'] = (matched_items['matchedPrice'] -
+                                   matched_items['minPrice'])
+        matched_items = matched_items.reset_index(drop=True)
+    
+        output_file('templates/sales-data.html')
+    
+        source = ColumnDataSource(matched_items)
+    
+        columns = [
+            TableColumn(field="timeMatched",
+                        title="Date",
+                        formatter=DateFormatter()),
+            TableColumn(field="matchedPrice",
+                        title="Matched Price"),
+            TableColumn(field="minPrice",
+                        title="Posted Price"),
+            TableColumn(field="Profit",
+                        title="Profit")
+        ]
+        data_table = DataTable(source=source,
+                               columns=columns,
+                               width=600,
+                               height=500)
+
+        save(widgetbox(data_table))
+        #t = app.jinja_environment.get_template(name='sales-data.html')
+        #return(t)
+        return(render_template('sales-data.html'))
+
+    return(Response(stream_with_context(generate())))
 
 if __name__ == '__main__':
     app.run(debug=True)
