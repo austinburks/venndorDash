@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Venndor Dashboard</title>
+
+    <link rel="stylesheet" href="{{  url_for('static', filename='assets/lib/bootstrap/dist/css/bootstrap.min.css')  }}">
+    <link rel="stylesheet" href="{{  url_for('static', filename='assets/css/keen-dashboards.css')  }}">
+    {{ js_resources | safe }}
+    {{ css_resources | safe }}
+
+    <script type="text/javascript" src="../static//assets/lib/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="../static//assets/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../static//assets/lib/holderjs/holder.js"></script>
+
+    <script>
+      Holder.add_theme("white", { background:"#fff", foreground:"#a7a7a7", size:10 });
+    </script>
+
+    <script type="text/javascript" src="../static//assets/lib/keen-js/dist/keen.min.js"></script>
+    <script type="text/javascript" src="../static//assets/js/meta.js"></script>
+
+  </head>
+
+  <body class="application">  
+    <div class="col-sm-6">
+      <div class="chart-wrapper">
+        <div class="chart-stage">
+          {{ plot_p1_script | safe}}
+          {{ plot_p1_div | safe}}        
+        </div>  
+      </div>
+    </div>
+  </body>
+</html>
+
