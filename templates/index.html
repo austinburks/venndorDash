@@ -1,19 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <title>Venndor Dashboard</title>
-    <link rel="stylesheet" href="{{  url_for('static', filename='assets/lib/bootstrap/dist/css/bootstrap.min.css')  }}">
-    <link rel="stylesheet" href="{{  url_for('static', filename='assets/css/keen-dashboards.css')  }}">
-    <link rel="stylesheet" href="http://cdn.pydata.org/bokeh/release/bokeh-0.12.0.min.css" type="text/css" />
-    <script type="text/javascript" src="http://cdn.pydata.org/bokeh/release/bokeh-0.12.0.min.js"></script>
-    {{ js_resources | safe }}
-    {{ css_resources | safe }}
-  </head>
+<head>
+<title>Venndor Dashboard</title>
+<link rel="stylesheet" href="../static/lib/css/bootstrap.min.css">
+<link rel="stylesheet" href="../static/lib/css/keen-dashboards.css">
+<!--<link rel="stylesheet" href="{{  url_for('static', filename='assets/lib/bootstrap/dist/css/bootstrap.min.css')  }}">
+<link rel="stylesheet" href="{{  url_for('static', filename='assets/css/keen-dashboards.css')  }}">-->
+<!-- <link href="http://cdn.pydata.org/bokeh/release/bokeh-0.12.2.min.css"
+      rel="stylesheet"
+      type="text/css">
+<script src="http://cdn.pydata.org/bokeh/release/bokeh-compiler-0.12.2.min.js"
+        type="text/javascript"></script>
+<script src="http://cdn.pydata.org/bokeh/release/bokeh-0.12.2.min.js"
+        type="text/javascript"></script> -->
+{{ js_resources|safe }}
+{{ css_resources|safe }}
+
+</head>
 <body class="application">    
   <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
     <div class="container-fluid">
       <div class="navbar-header">
-        <a class="navbar-brand" href="./" style="font-size:35px;text-align:center">Venndor Dashboard</a>
+        <a class="navbar-brand" href="./" style="font-size:45px;text-align:center">Venndor Dashboard | </a>
+        <a class="navbar-brand" href="./sales-data" style="font-size:30px;text-align:center">Live Sales Feed</a>
       </div>
     </div>
   </div>
@@ -26,52 +35,22 @@
       <div class="col-sm-12">
         <div class="chart-wrapper">
           <div class="chart-title">
-            ROI - Vertical | Program on Vertical Level | Programs
+            High Level Graphs
           </div>
           <div class="chart-stage">
-            {{ plot_p1_script | safe }}     
-            
-            {{ plot_p1_div | safe }}
-            
+            {{ div.plot|safe }}
+            {{ script|safe }}     
+
           </div>
           <div class="chart-notes">
-            Hover over the bars to see the reported ROI
+            Hover over the bars to see the details
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="col-sm-6 col-md-3">
-    <div class="row">
-
-      <div class="col-sm-12">
-        <div class="chart-wrapper">
-          <div class="chart-title">
-            Data Table
-          </div>
-          <div class="chart-stage">
-            {{ plot_p2_script | indent(2) | safe }}     
-            
-            {{ plot_p2_div | indent(2) | safe }}
-
-            
-          </div>
-          <div class="chart-notes">
-            ROI by Program
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  
-  
-        
-
-    
-
-  <script src="../static//assets/lib/jquery/dist/jquery.min.js"></script>
+<!--   <script src="../static//assets/lib/jquery/dist/jquery.min.js"></script>
   <script src="../static//assets/lib/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="../static//assets/lib/holderjs/holder.js"></script>
 
@@ -80,7 +59,18 @@
   </script>
 
   <script src="../static//assets/lib/keen-js/dist/keen.min.js"></script>
-  <script src="../static//assets/js/meta.js"></script>
+  <script src="../static//assets/js/meta.js"></script> -->
+
+  <script src="../static/lib/js/jquery.min.js"></script>
+  <script src="../static/lib/js/bootstrap.min.js"></script>
+  <script src="../static/lib/js/holder.js"></script>
+
+  <script>
+    Holder.add_theme("white", { background:"#fff", foreground:"#a7a7a7", size:10 });
+  </script>
+
+  <script src="../static/lib/js/keen.min.js"></script>
+  <script src="../static/lib/js/meta.js"></script>
 
 </body>
 </html>

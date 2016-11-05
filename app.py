@@ -23,15 +23,18 @@ from bokeh.models import (ColumnDataSource,
                           HoverTool)
 from bokeh.models.widgets import (DataTable,
                                   DateFormatter,
-                                  TableColumn)
+                                  TableColumn,
+                                  Panel,
+                                  Tabs)
 from bokeh.palettes import Blues5
 from bokeh.plotting import Figure
-from bokeh.resources import INLINE
+from bokeh.resources import INLINE, EMPTY
 from bokeh.embed import components
 import time
 # Defining environment settings
-app = Flask(__name__,
-            static_url_path='/static/')
+app = Flask(__name__
+            #,static_url_path='/static/'
+            )
 #app._static_folder = 'static'
 
 #app.config.from_object(os.environ['APP_SETTINGS'])
@@ -106,8 +109,6 @@ def dashboard():
     items = getItems(suffix='items', apiKey=apiKey)
     users = getItems(suffix='users', apiKey=apiKey)
 
-    # Generating the output file name
-    output_file("templates/bar.html")
 
     # %% Creating df defining the ratio of right swipes to left swipes
     df_right_left = pd.DataFrame(items)
@@ -124,7 +125,8 @@ def dashboard():
 
     # Finding the ratio
     df_right_left['RightOverLeft'] = df_right_left['nuSwipesRight'].div(
-                                        df_right_left['nuSwipesLeft'])                                   
+                                        df_right_left['nuSwipesLeft'])
+
     # Creating the first bar chart
     p1 = Bar(data=df_right_left,
              label='category',
@@ -142,7 +144,7 @@ def dashboard():
     # Defining p1 tooltips
     hover.tooltips = [('Value', '@y'),
                       ('Category', '@x')]
-
+    #show(p1)
     # %% Creating df of time-per-controller variables
     df_users = pd.io.json.json_normalize(users)
     df_users = df_users.filter(regex='timePerController')
@@ -171,27 +173,34 @@ def dashboard():
     hover.tooltips = [('Value', '@y'),
                       ('Controller Type', '@x')]
 
+   # show(p2)
     # Defining dashboard layout
-    l = layout([
-            [p1, p2]
-            
-                ], sizing_mode='stretch_both')
-    
+
     p1_script, p1_div = components(p1)
     p2_script, p2_div = components(p2)
-
+    
     js_resources = INLINE.render_js()
     css_resources = INLINE.render_css()
+    
+    tab1 = Panel(child=p1, title='Right-Left Ratio')
+    tab2 = Panel(child=p2, title='Time on Controllers')
 
+    tab_plot = Tabs(tabs=[tab1, tab2])    
+
+    #show(tab_plot)
+    #script, div = components(dict(plot=tabs))
+    script, div = components(dict(plot=tab_plot))
+    
+    
+    
     return(
         render_template(
                     'index.html',
-                    plot_p1_script=p1_script,
-                    plot_p1_div=p1_div,
-                    plot_p2_script=p2_script,
-                    plot_p2_div=p2_div,
+                    script=script,
+                    div=div,
                     js_resources=js_resources,
                     css_resources=css_resources
+
 
                         )
             )
@@ -203,28 +212,29 @@ def sales_data_stream():
         # Obtain both the matches and item JSONS
         matches = getItems(suffix='matches', apiKey=apiKey)
         items = getItems(suffix='items', apiKey=apiKey)
-    
+
         # Convert both to dataframe
         match_df = pd.DataFrame(matches)
         item_df = pd.DataFrame(items)
-    
+
         # Filter to only the relevant columns
-        item_df = item_df[['_id', 'bought', 'minPrice', 'timeMatched']]
+        item_df = item_df[['_id', 'bought', 'minPrice']]
         item_df = item_df.rename(columns={'bought': 'bought_item'})
-        item_df['timeMatched'] = pd.to_datetime(item_df['timeMatched'],
+
+        match_df = match_df[['itemID', 'bought', 'matchedPrice', 'dateBought']]
+        match_df['dateBought'] = pd.to_datetime(match_df['dateBought'],
                                                 yearfirst=True,
                                                 exact=False,
                                                 format='%y-%m-%d')
-        match_df = match_df[['itemID', 'bought', 'matchedPrice']]
         match_df = match_df.rename(columns={'bought': 'bought_match'})
-    
+
         # Merge DFs on item ids
         matched_items = match_df.merge(item_df,
-                                       how='inner',
+                                       how='left',
                                        left_on='itemID',
                                        right_on='_id')
 
-        matched_items = matched_items.loc[matched_items['bought_match']]
+        matched_items = matched_items.loc[matched_items['bought_match'] == 1]
         matched_items['Profit'] = (matched_items['matchedPrice'] -
                                    matched_items['minPrice'])
         matched_items = matched_items.reset_index(drop=True)
@@ -234,9 +244,10 @@ def sales_data_stream():
         source = ColumnDataSource(matched_items)
 
         columns = [
-            TableColumn(field="timeMatched",
+            TableColumn(field="dateBought",
                         title="Date",
-                        formatter=DateFormatter()),
+                        formatter=DateFormatter(format='dd/mm/yy')
+                        ),
             TableColumn(field="matchedPrice",
                         title="Matched Price"),
             TableColumn(field="minPrice",
