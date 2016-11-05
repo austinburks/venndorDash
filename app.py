@@ -32,9 +32,7 @@ from bokeh.resources import INLINE, EMPTY
 from bokeh.embed import components
 import time
 # Defining environment settings
-app = Flask(__name__
-            #,static_url_path='/static/'
-            )
+app = Flask(__name__ , static_url_path='/static')
 #app._static_folder = 'static'
 
 #app.config.from_object(os.environ['APP_SETTINGS'])
